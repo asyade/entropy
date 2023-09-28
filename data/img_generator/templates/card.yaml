@@ -1,0 +1,8 @@
+- !Include
+  uri: card/card.yaml
+
+- !IncludeVaried
+  name: class
+  choices:
+    goblin: card/class/goblin.yaml
+    elf: card/class/elf.yaml

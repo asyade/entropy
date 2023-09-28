@@ -1,0 +1,27 @@
+variants:
+  attr1:
+    - prompt: with short curly hairs
+      pos: 100
+    - prompt: with long curly hairs
+      pos: 100
+
+  attr2:
+    - prompt: with scars on his face
+      pos: 90
+    - prompt: with scars on his body
+      pos: 90
+    - prompt: with scars on his face and body
+      pos: 90
+      
+  attr1:
+    - prompt: wearing a leather armor
+      pos: 100
+    - prompt: waring a chainmail
+      pos: 100
+    - prompt: wearing a plate armor
+      pos: 100
+
+  scene:
+    - prompt: of an goblin
+      pos: 0
+      subPos: 1

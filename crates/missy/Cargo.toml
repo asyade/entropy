@@ -1,0 +1,8 @@
+[package]
+name = "missy"
+version = "0.1.0"
+edition = "2021"
+description = "A moderne web crawler that can extract contextualized data."
+authors = [ "Asya Corbeau" ]
+
+[dependencies]

@@ -1,0 +1,13 @@
+[package]
+name = "prompt-generator"
+version = "0.1.0"
+edition = "2021"
+authors = [ "A. corbeau" ]
+
+[dependencies]
+serde = { version = "1.0.130", features = ["derive"] }
+serde_yaml = "0.9.25"
+rand = { version = "0.8" }
+tokio = { version = "1.11", features = ["full"] }
+tokio-test = "*"
+thiserror = "1.0.48"

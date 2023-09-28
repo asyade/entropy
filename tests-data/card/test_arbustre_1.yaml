@@ -1,0 +1,10 @@
+parts:
+  - uri: "card/base"
+    params: []
+  - uri: "card/class/arbustre"
+    variantes:
+      - leaf: 0
+      - bark: 1
+      - structure: 1
+      - fruit: 1
+      - flower: 1

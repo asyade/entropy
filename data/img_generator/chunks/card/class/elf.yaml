@@ -1,0 +1,23 @@
+variants:
+  attr1:
+    - prompt: with blue eyes
+      pos: 100
+    - prompt: with green eyes
+      pos: 100
+    - prompt: with gray eyes
+      pos: 100
+
+  attr2:
+    - prompt: wearing a metal armor
+      pos: 100
+    - prompt: wearing a mage dress
+      pos: 100
+    - prompt: wearing a king dress
+      pos: 100
+    - prompt: waring a dress
+      pos: 100
+
+  scene:
+    - prompt: of an elf
+      pos: 0
+      subPos: 1

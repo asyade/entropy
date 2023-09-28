@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "crates/prompt-generator",
+    "crates/api-connector",
+    "crates/guy",
+    "crates/missy",
+    "binaries/randomizer",
+    "binaries/shia"
+]

@@ -1,0 +1,15 @@
+[package]
+name = "api-connector"
+description = "A suite of API connector for common AI plateforms (OpenAI, StableDiffusion [...])."
+authors = [ "Asya Corbeau" ]
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+thiserror = "1.0"
