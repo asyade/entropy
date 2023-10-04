@@ -18,8 +18,7 @@ pub enum OpenAIError {
     },
 }
 
-pub type Result<T> = std::result::Result<T, OpenAIError>;
-
+pub (crate) type Result<T> = std::result::Result<T, OpenAIError>;
 
 #[derive(Clone, Debug)]
 pub struct OpenAIConnector {
@@ -38,7 +37,8 @@ pub struct ChatCompletionRequest<'a> {
     pub model: String,
     pub messages: &'a [ChatCompletionMessage],
     // todo: functions
-    // pub functions: Option<&'a [ChatCompletionFunction]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub functions: Option<&'a [ChatCompletionFunction]>,
     // pub function_call: Option<serde_json::Value>,
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
@@ -58,10 +58,10 @@ pub struct ChatCompletionResponse {
     pub object: String,
     pub created: u64,
     pub model: String,
-    pub choices: Vec<serde_json::Value>,
+    pub choices: Vec<ChatCompletionChoice>,
     pub usage: serde_json::Value,
 }
-
+ 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ChatCompletionError {
     pub error: ChatCompletionErrorContent,
@@ -80,29 +80,29 @@ pub struct ChatCompletionChoice {
     pub finish_reason: String,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ChatCompletionMessage {
     pub role: ChatCompletionRole,
     pub content: String,
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ChatCompletionFunction {
     pub name: String,
     pub description: String,
     pub parameters: ChatCompletionFunctionParameters,
+    pub required: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ChatCompletionFunctionParameters {
     #[serde(rename = "type")]
     pub kind: String,
     pub properties: HashMap<String, ChatCompletionFunctionProperty>,
-    pub required: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ChatCompletionFunctionProperty {
     #[serde(rename = "type")]
     pub kind: String,
@@ -110,7 +110,7 @@ pub struct ChatCompletionFunctionProperty {
 }
 
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ChatCompletionRole {
     System,
@@ -168,7 +168,7 @@ impl Default for ChatCompletionRequest<'static> {
         Self {
             model: "gpt-4".to_string(),
             messages: &[],
-            // functions: None,
+            functions: None,
             // function_call: None,
             temperature: None,
             top_p: None,

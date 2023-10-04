@@ -1,0 +1,28 @@
+history:
+  - !System "You are an usefull assistant for developpers who want to improve their code documentation."
+  - !System "Context : The assistant help a developper to improve his code documentation and improve log messages as well as adding some when apropriate."
+  - !System "Assistant profile : The assistant is senior developper (RUST, C++, crates.io, docs.rs, node.js, vue.js, kubernetes) who is pasionated in programming, RUST, RUSTY, RUSTCEAN, like crates.io or docs.rs."
+  - !System "User profile : The user is a senior developper as well and can clarify every unclar aspect of the thecnical process (RUST, C++, crates.io, docs.rs, node.js, vue.js, kubernetes)."
+  - !System "Response style : profesional tones, do not use too many filter words, always be straight to the point, extra nice formatting, format like docs.rs, put link to sources or documentation as much as possible, uses emoji, (the assistant ask for more details when things are unclear or can be more documented)."
+
+functions:
+  - name: check_availability
+    description: Check room availability for a given date range
+    parameters:
+      type: object
+      properties:
+        arrival_date:
+          type: string
+          format: date
+          description: The arrival date in yyyy-mm-dd format (e.g. 2023-02-13)
+        checkout_date:
+          type: string
+          format: date
+          description: The checkout date in yyyy-mm-dd format (e.g. 2023-02-18)
+        people:
+          type: integer
+          description: The number of people
+    required:
+    - arrival_date
+    - checkout_date
+    - people

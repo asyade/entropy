@@ -16,7 +16,6 @@ impl KeyChain {
                 (name.to_string(), value)
             })
             .collect::<HashMap<String, String>>();
-        dbg!(&keys);
         Self { keys: Arc::new(RwLock::new(keys)) }
     }
 

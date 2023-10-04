@@ -3,6 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use state::AppState;
 use std::{
     error::Error,
     io,
@@ -10,29 +11,14 @@ use std::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph, Wrap},
-    Frame, Terminal,
+    Terminal,
 };
 
 use tui_textarea::{TextArea, Key, Input};
 
-struct App {
-    scroll: u16,
-}
-
-impl App {
-    fn new() -> App {
-        App { scroll: 0 }
-    }
-
-    fn on_tick(&mut self) {
-        self.scroll += 1;
-        self.scroll %= 10;
-    }
-}
+pub mod prelude;
+pub mod state;
+pub mod view;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -44,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // create app and run it
     let tick_rate = Duration::from_millis(10);
-    let app = App::new();
+    let app = AppState::default();
     let res = run_app(&mut terminal, app, tick_rate);
 
     // restore terminal
@@ -65,14 +51,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
-    mut app: App,
+    mut app: AppState,
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
-    let mut textarea = TextArea::default();
+    let mut state = AppState::default();
+
 
     loop {
-        terminal.draw(|f| ui(f, &app, &mut textarea))?;
+        terminal.draw(|f| view::ui(f, &app, &mut state))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -106,7 +93,7 @@ fn run_app<B: Backend>(
                         KeyCode::F(x) => Key::F(x),
                         _ => Key::Null,
                     };
-                    textarea.input(Input { key, ctrl, alt });
+                    state.input_textarea.input(Input { key, ctrl, alt });
                 }
                 _ => {}
             }
@@ -116,36 +103,4 @@ fn run_app<B: Backend>(
             last_tick = Instant::now();
         }
     }
-}
-
-fn ui<B: Backend>(f: &mut Frame<B>, app: &App, textarea: &mut TextArea) {
-    let size = f.size();
-    let lines = textarea.lines().len() as u16;
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Length(size.height.max(lines) - lines),
-                Constraint::Length(18),
-            ]
-            .as_ref(),
-        )
-        .split(size);
-
-    let history_widget = vec![
-        Spans::from("This is a line "),
-        Spans::from(Span::styled(
-            "This is a line   ",
-            Style::default().fg(Color::Red),
-        )),
-    ];
-
-    let history = Paragraph::new(history_widget.clone())
-        // .style(Style::default())
-        .block(Block::default())
-        .alignment(Alignment::Left);
-    f.render_widget(history, chunks[0]);
-
-    let widget = textarea.widget();
-    f.render_widget(widget, chunks[1]);
 }

@@ -1,0 +1,29 @@
+defaults:
+  - prompt: hearthstone and magic the gathering and world of warcraft and the witcher art style
+    pos: 1001
+  - prompt: (epic fantasy style), art by Raymond Swanland and Marc Simonetti and Shigeru Miyamoto and Eiji Aonuma and Yoshiaki Koizumi
+    pos: 1003
+  - prompt: intricate, professional, game asset, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), (fantasy artstation), (board and card game artstation), trending on artstation
+    pos: 1004
+
+variants:
+  scene:
+    - prompt: masterpiece centered painted portrait
+      pos: 0
+      subPos: 0
+
+  sex:
+    - prompt: male
+      pos: 100
+      subPos: 0`
+    - prompt: female
+      pos: 100
+      subPos: 0
+
+  weight:
+    - prompt: fat
+      pos: 100
+    - prompt: skinny
+      pos: 100
+    - prompt: muscular
+      pos: 100

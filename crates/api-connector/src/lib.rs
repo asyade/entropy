@@ -1,4 +1,3 @@
-use std::env;
 pub mod prelude;
 pub mod error;
 pub mod keyring;

@@ -1,5 +1,3 @@
-use api_connector::keyring::KeyChain;
-
 use crate::prelude::*;
 use crate::template::*;
 
@@ -7,17 +5,19 @@ pub mod error;
 pub mod prelude;
 pub mod template;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Guy {
-    connector: OpenAIConnector,
+    pub name: Option<String>,
+    pub description: Option<String>,
     pub history: Vec<ChatCompletionMessage>,
     pub functions: Vec<ChatCompletionFunction>,
 }
 
 impl Guy {
-    pub fn new(keychain: &KeyChain) -> Self {
+    pub fn new() -> Self {
         Self {
-            connector: OpenAIConnector::new(keychain),
+            name: None,
+            description: None,
             history: Vec::new(),
             functions: Vec::new(),
         }
@@ -50,12 +50,13 @@ impl Guy {
         self.history.push(completion);
     }
 
-    pub async fn completion(&mut self) -> Result<ChatCompletionResponse> {
+    pub async fn completion(&mut self, connector: &OpenAIConnector) -> Result<ChatCompletionResponse> {
         let request = ChatCompletionRequest {
             messages: &self.history[..],
             ..Default::default()
         };
-        let response = self.connector.chat_completion_request(request).await.unwrap();
+        let response = connector.chat_completion_request(request).await.unwrap();
+        self.history.push(response.choices[0].message.clone());
         Ok(response)
     }
 }
@@ -63,22 +64,15 @@ impl Guy {
 
 #[cfg(test)]
 pub mod tests {
-    use std::f32::consts::E;
-
     use super::*;
 
     #[tokio::test]
     async fn test_guy() {
         dotenv::dotenv().ok();
         let template = GuyTemplate::from_yaml_file("../../data/guys/crypto.yaml").unwrap();
-        let mut guy = Guy::new(&KeyChain::from_env());
+        let mut guy = Guy::new();
         guy.load_template(template).await.unwrap();
-
-        dbg!(&guy);
-        match guy.completion().await {
-            Ok(response) => println!("{}", response.choices[0]),
-            Err(er) => println!("{:?}", er),
-        }
         
+        dbg!(&guy);
     }
 }

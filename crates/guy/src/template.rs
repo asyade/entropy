@@ -15,14 +15,14 @@ pub struct ChatCompletionFunctionTemplate {
     pub name: String,
     pub description: String,
     pub parameters: ChatCompletionFunctionParametersTemplate,
+    pub required: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatCompletionFunctionParametersTemplate {
     #[serde(rename = "type")]
-    kind: String,
-    properties: HashMap<String, ChatCompletionFunctionPropertyTemplate>,
-    required: Vec<String>,
+    pub kind: String,
+    pub properties: HashMap<String, ChatCompletionFunctionPropertyTemplate>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,6 +53,7 @@ impl Into<ChatCompletionFunction> for ChatCompletionFunctionTemplate {
             name: self.name,
             description: self.description,
             parameters: self.parameters.into(),
+            required: self.required,
         }
     }
 }
@@ -62,7 +63,6 @@ impl Into<ChatCompletionFunctionParameters> for ChatCompletionFunctionParameters
         ChatCompletionFunctionParameters {
             kind: self.kind,
             properties: self.properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
-            required: self.required,
         }
     }
 }
