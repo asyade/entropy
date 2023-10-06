@@ -54,47 +54,96 @@ async fn ask_interactive(
         None
     };
 
-    for message in guy.history.iter() {
-        print_message(&message);
+    for (idx, message) in guy.history.iter().enumerate() {
+        print_message(&message, idx);
     }
 
-    'rd: loop {
+    loop {
         if let Some((message, role)) = request.take() {
             guy.push_message(message, role);
-            let response = guy.completion(&mut connector).await?;
-            print_message(&response.choices[0].message);
+            let response: ChatCompletionResponse = guy.completion(&mut connector).await?;
+            print_message(&response.choices[0].message, guy.history.len() - 1);
             if let Err(e) = handle.store_guy(guy.clone()) {
                 print_error!("Failed to persist guy's changes: {:?}", e)
             }
         }
+        
         let input = Text::new("");
         let Ok(input) = input.prompt() else {
             return Ok(());
         };
+        // let input = Text::new("");
+        // let Ok(input) = input.prompt() else {
+        //     return Ok(());
+        // };
         match input.as_str() {
-            n if n.starts_with("\\") => match n {
-                "\\exit" => {
-                    break 'rd;
+            n if n.starts_with("\\") => {
+                let mut args = n.split(" ");
+                match args.next() {
+                    Some("\\help") => {
+                        println!("
+\\help - print this help
+\\save \\s - save changes
+\\exit \\e - exit
+\\completion \\c - ask for completion
+\\history \\h - print history
+\\rm [<index>..] - remove message at index
+                        ");
+                    }
+                    Some("\\save") | Some("\\s") => {
+                        if let Err(e) = handle.store_guy(guy.clone()) {
+                            print_error!("Failed to persist guy's changes: {:?}", e)
+                        } else {
+                            print_success!("Guy cahnges saved")
+                        }            
+                    }
+                    Some("\\exit") | Some("\\e") => {
+                        // TODO: ask for save
+                        return Ok(());
+                    }
+                    Some("\\completion") | Some("\\c") => {
+                        let response: ChatCompletionResponse = guy.completion(&mut connector).await?;
+                        print_message(&response.choices[0].message, guy.history.len() - 1);
+                    }
+                    Some("\\history") | Some("\\h") => {
+                        for (idx, message) in guy.history.iter().enumerate() {
+                            print_message(&message, idx);
+                        }
+                    }
+                    Some("\\rm") => {
+                        while let Some(idx) = args.next().and_then(|e| e.parse::<usize>().ok()) {
+                            if idx < guy.history.len() {
+                                guy.history.remove(idx);
+                                print_success!("Message removed: {}", idx);
+                            } else {
+                                print_error!("Index out of bounds: {}", idx);
+                            }
+                        }
+                    }
+                    _ => print_error!("Unknown command: {}", n),
                 }
-                "\\last" => {
-                    let _ = guy
-                        .history
-                        .last()
-                        .map(|e| println!("{:?}: {}", e.role, e.content));
-                }
-                _ => {
-                    print_error!("Unknown command: {}", n);
-                }
-            },
+            }
             _ => {
                 request = Some((input.to_string(), ChatCompletionRole::User));
             }
         }
     }
-    Ok(())
 }
 
-fn print_message(message: &ChatCompletionMessage) {
+use colored::Colorize;
+
+fn print_message(message: &ChatCompletionMessage, index: usize) {
+    let role_colored = match message.role {
+        ChatCompletionRole::User => format!("{:?}", message.role).green(),
+        ChatCompletionRole::System => format!("{:?}", message.role).magenta(),
+        ChatCompletionRole::Assistant => format!("{:?}", message.role).blue(),
+        ChatCompletionRole::Function => format!("{:?}", message.role).yellow(),
+    };
+    println!(
+        "{} ({})",
+        role_colored,
+        index,
+    );
     termimad::print_text(&message.content);
-    termimad::print_text(&format!("(**{:?}**)\n\n", message.role));
+    print!("\n");    
 }
