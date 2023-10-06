@@ -176,33 +176,13 @@ async fn hanlde_command(cli: Cli) -> Result<(), anyhow::Error> {
                     dry_run,
                 } => {
                     let handle = store.get_guy_handle(&name).await?;
-                    let mut guy = handle.get_guy()?;
-
-                    if *reset {
-                        guy.history.clear();
-                    }
-
-                    if let Some(template) = template.clone() {
-                        println!("Template applyed: {}", template);
-                        guy.load_template(GuyTemplate::from_yaml_file(&template)?)
-                            .await?;
-                    }
-
-                    if *dry_run {
-                        println!("{}", serde_yaml::to_string(&guy)?)
-                    } else {
-                        handle.store_guy(guy)?;
-                        print_success!("Guy `{}` upserted", name);
-                    }
+                    commands::apply::apply(handle, *reset, template.as_deref(), *dry_run).await?;
                 }
                 GuysCommands::Delete {} => {
-                    // store.drop_tree(name)?;
-                    // println!("Guy `{}` deleted", name);
+                    store.delete_guy(&name).await?;
+                    println!("Guy `{}` deleted", name);
                 }
                 GuysCommands::List {} => {
-                    // for tree in store.tree_names().into_iter().map(|e| String::from_utf8(e.to_vec()).unwrap()).filter(|e| !e.starts_with("__")) {
-                    // println!("{}", tree);
-                    // }
                 }
                 GuysCommands::Edit { editor } => {
                     let handle = store.get_guy_handle(&name).await?;

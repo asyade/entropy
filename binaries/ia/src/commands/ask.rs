@@ -53,16 +53,24 @@ async fn ask_interactive(
     } else {
         None
     };
+
+    for message in guy.history.iter() {
+        print_message(&message);
+    }
+
     'rd: loop {
         if let Some((message, role)) = request.take() {
             guy.push_message(message, role);
             let response = guy.completion(&mut connector).await?;
+            print_message(&response.choices[0].message);
             if let Err(e) = handle.store_guy(guy.clone()) {
                 print_error!("Failed to persist guy's changes: {:?}", e)
             }
-            termimad::print_text(&response.choices[0].message.content);
         }
-        let input = Text::new("").prompt().unwrap();
+        let input = Text::new("");
+        let Ok(input) = input.prompt() else {
+            return Ok(());
+        };
         match input.as_str() {
             n if n.starts_with("\\") => match n {
                 "\\exit" => {
@@ -84,4 +92,9 @@ async fn ask_interactive(
         }
     }
     Ok(())
+}
+
+fn print_message(message: &ChatCompletionMessage) {
+    termimad::print_text(&message.content);
+    termimad::print_text(&format!("(**{:?}**)\n\n", message.role));
 }

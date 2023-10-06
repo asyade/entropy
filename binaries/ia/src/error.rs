@@ -18,6 +18,10 @@ pub enum IaError {
     OpenAIError(#[from] api_connector::openai::OpenAIError),
     #[error("Guy: {}", _0)]
     Guy(#[from] guy::error::GuyError),
+    #[error("Guy not alive")]
+    NotAlive,
+    #[error("Yaml: {}", _0)]
+    Yaml(#[from] serde_yaml::Error),
 }
 
 pub type IaResult<T> = std::result::Result<T, IaError>;
