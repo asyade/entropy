@@ -2,7 +2,6 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GuyTemplate {
-    pub name: Option<String>,
     pub description: Option<String>,
     #[serde(default)]
     pub history: Vec<ChatCompletionMessageTemplate>,

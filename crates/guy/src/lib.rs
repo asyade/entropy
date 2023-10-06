@@ -7,7 +7,6 @@ pub mod template;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Guy {
-    pub name: Option<String>,
     pub description: Option<String>,
     pub history: Vec<ChatCompletionMessage>,
     pub functions: Vec<ChatCompletionFunction>,
@@ -16,7 +15,6 @@ pub struct Guy {
 impl Guy {
     pub fn new() -> Self {
         Self {
-            name: None,
             description: None,
             history: Vec::new(),
             functions: Vec::new(),
@@ -24,6 +22,7 @@ impl Guy {
     }
 
     pub async fn load_template(&mut self, template: GuyTemplate) -> Result<()> {
+        self.description = template.description;
         for message in template.history {
             match message {
                 ChatCompletionMessageTemplate::User(content) => {

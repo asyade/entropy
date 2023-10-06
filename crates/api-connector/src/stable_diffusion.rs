@@ -1,5 +1,4 @@
 use crate::{prelude::*, keyring::KeyChain};
-use std::env;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

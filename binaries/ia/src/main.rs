@@ -1,32 +1,31 @@
 #![feature(async_closure)]
-use api_connector::{
-    keyring::KeyChain,
-    openai::{ChatCompletionRole, OpenAIConnector},
-};
 use clap::{Parser, Subcommand};
 use guy::prelude::*;
-use inquire::Text;
 use tokio::{io::AsyncReadExt, process::Command};
 
 use crate::prelude::*;
 
+pub mod commands;
 pub mod error;
 pub mod prelude;
 pub mod store;
 pub mod utils;
 
+#[macro_export]
 macro_rules! print_error {
     ($($arg:tt)*) => {{
         eprintln!("❌ {}", format!( $($arg)* ));
     }}
 }
 
+#[macro_export]
 macro_rules! print_warning {
     ($($arg:tt)*) => {{
         eprintln!("⚡ {}", format!( $($arg)* ));
     }}
 }
 
+#[macro_export]
 macro_rules! print_success {
     ($($arg:tt)*) => {{
         eprintln!("✅ {}", format!( $($arg)* ));
@@ -74,36 +73,56 @@ pub enum GuysCommands {
             help = "Show preview of the updated guy (does not persist changes)"
         )]
         dry_run: bool,
-        #[arg(short, long, default_value = "false", help = "Template file to apply")]
         template: Option<String>,
     },
     #[command(about = "Delete a guy from the store")]
     Delete {},
-    #[command(about = "Edit a stord guy as yaml file")]
+    #[command(about = "Edit a stord guy")]
     Edit {
         #[arg(long, help = "The text editor to use")]
         editor: Option<String>,
     },
     #[command(about = "List all available guys in the store")]
     List {},
-    #[command(about = "Show guy's data")]
+    #[command(about = "Export guy's data")]
     Get {
         #[arg(short, long, help = "The output format")]
         output: Option<GuyGetOutputFormat>,
     },
-    #[command(about = "Perform a chat completion with a guy")]
+    #[command(about = "Perform a chat completion with a guy`")]
     Ask {
-        #[arg(short, long, default_value = "user", help = "The message's role")]
-        //TODO: posible values
-        role: String,
         #[arg(
             short,
             long,
-            help = "The message to send to the guy, stdin if not provided"
+            default_value = "user",
+            long_help = "The `role` of the message to be appended to the guy's history."
+        )]
+        //TODO: posible values
+        role: GuyAskRole,
+        #[arg(
+            short,
+            long,
+            long_help = "The message to be appended to the guy's history.\nFilled with stdin (if any data avail) when not provided.",
+            help = "The message to be appended to history"
         )]
         message: Option<String>,
-        #[arg(short, long, default_value = "false", help = "Interactive mode")]
+        #[arg(
+            short,
+            long,
+            default_value = "false",
+            long_help = "Run in interactive mode.",
+            help = "Interactive mode",
+            conflicts_with = "completion"
+        )]
         interactive: bool,
+        #[arg(
+            short,
+            long,
+            default_value = "true",
+            help = "Perform a completion after consuming the provided message if any",
+            conflicts_with = "interactive"
+        )]
+        completion: bool,
     },
 }
 
@@ -111,6 +130,14 @@ pub enum GuysCommands {
 pub enum GuyGetOutputFormat {
     Yaml,
     Json,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+pub enum GuyAskRole {
+    System,
+    User,
+    Assistant,
+    Function,
 }
 
 #[tokio::main]
@@ -224,14 +251,9 @@ async fn hanlde_command(cli: Cli) -> Result<(), anyhow::Error> {
                     role,
                     message,
                     interactive,
+                    completion,
                 } => {
-                    let role = serde_yaml::from_str(&format!("\"{}\"", role))?;
-
-                    let keychain = KeyChain::from_env();
-                    let mut connector = OpenAIConnector::new(&keychain);
-
                     let handle = store.get_guy_handle(&name).await?;
-                    let mut guy = handle.get_guy()?;
                     let message = if let Some(message) = message {
                         Some(message.clone())
                     } else if !atty::is(atty::Stream::Stdin) {
@@ -245,56 +267,8 @@ async fn hanlde_command(cli: Cli) -> Result<(), anyhow::Error> {
                     } else {
                         None
                     };
-                    dbg!(&message);
-                    if *interactive {
-                        let mut request: Option<(String, ChatCompletionRole)> =
-                            if let Some(message) = message {
-                                Some((message, role))
-                            } else {
-                                None
-                            };
-                        loop {
-                            if let Some((message, role)) = request.take() {
-                                guy.push_message(message, role);
-                                let response = guy.completion(&mut connector).await?;
-                                if let Err(e) = handle.store_guy(guy.clone()) {
-                                    print_error!("Failed to persist guy's changes: {:?}", e)
-                                }
-                                termimad::print_text(&response.choices[0].message.content);
-                            }
-                            let input = Text::new("").prompt()?;
-                            match input.as_str() {
-                                n if n.starts_with("\\") => match n {
-                                    "\\exit" => {
-                                        break;
-                                    }
-                                    "\\last" => {
-                                        let _ = guy
-                                            .history
-                                            .last()
-                                            .map(|e| println!("{:?}: {}", e.role, e.content));
-                                    }
-                                    _ => {
-                                        print_error!("Unknown command: {}", n);
-                                    }
-                                },
-                                _ => {
-                                    request = Some((input.to_string(), ChatCompletionRole::User));
-                                }
-                            }
-                        }
-                    } else {
-                        if let Some(message) = message {
-                            guy.push_message(message, role);
-                        }
-                        let response = guy.completion(&mut connector).await?;
-                        let _ = handle.store_guy(guy.clone());
-                        if let Err(e) = handle.store_guy(guy.clone()) {
-                            print_error!("Failed to persist guy's changes: {:?}", e)
-                        } else {
-                            println!("{}", response.choices[0].message.content);
-                        }
-                    }
+                    commands::ask::ask(handle, (*role).into(), message, *interactive, *completion)
+                        .await?;
                 }
             }
         }
@@ -320,4 +294,15 @@ async fn ask_for_editing(init: String, editor: Option<String>) -> Result<String,
 
     let _ = tmp_dir.close();
     Ok(edited_content)
+}
+
+impl Into<ChatCompletionRole> for GuyAskRole {
+    fn into(self) -> ChatCompletionRole {
+        match self {
+            Self::System => ChatCompletionRole::System,
+            Self::User => ChatCompletionRole::User,
+            Self::Assistant => ChatCompletionRole::Assistant,
+            Self::Function => ChatCompletionRole::Function,
+        }
+    }
 }

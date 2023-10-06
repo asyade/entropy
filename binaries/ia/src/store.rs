@@ -1,7 +1,3 @@
-use std::{collections::hash_map::Entry, sync::RwLockReadGuard, future::Future};
-
-use guy::{Guy, template::GuyTemplate};
-
 use crate::prelude::*;
 
 pub const TREE_SETTINGS: &str = "____settings";
@@ -51,8 +47,8 @@ impl Store {
 
     pub async fn get_guy_handle(&self, name: &str) -> IaResult<GuyHandle> {
         match self.opened_guys.write().map_err(|_| IaError::StoreDeadLock("Self::opened_guys"))?.entry(name.to_string()) {
-            Entry::Occupied(e) => Ok(e.get().clone()),
-            Entry::Vacant(e) => {
+            hash_map::Entry::Occupied(e) => Ok(e.get().clone()),
+            hash_map::Entry::Vacant(e) => {
                 let tree = self.db.open_tree(name)?;
                 let handle = GuyHandle::load_or_create(tree).await?;
                 e.insert(handle.clone());
